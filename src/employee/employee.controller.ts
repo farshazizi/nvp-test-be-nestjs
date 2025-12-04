@@ -7,15 +7,21 @@ import {
   Param,
   Patch,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { Employee } from './entities/employee.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+// import { PermissionGuard } from '../auth/permission/permission.guard';
+// import { Permissions } from '../auth/permission/permission.decorator';
 
 @Controller('employees')
+@UseGuards(JwtAuthGuard)
 export class EmployeeController {
   constructor(private employeeService: EmployeeService) {}
 
   @Get()
+  // @Permissions('employee.read')
   async findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -47,6 +53,7 @@ export class EmployeeController {
   }
 
   @Post()
+  // @Permissions('employee.create')
   async create(@Body() body: Employee) {
     const data = await this.employeeService.create(body);
 
@@ -58,6 +65,7 @@ export class EmployeeController {
   }
 
   @Patch(':id')
+  // @Permissions('employee.update')
   async update(@Param('id') id: string, @Body() body: Employee) {
     await this.employeeService.update(id, body);
 
@@ -71,6 +79,7 @@ export class EmployeeController {
   }
 
   @Delete(':id')
+  // @Permissions('employee.delete')
   async remove(@Param('id') id: string) {
     await this.employeeService.remove(id);
 
