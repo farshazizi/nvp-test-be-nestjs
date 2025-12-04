@@ -12,13 +12,20 @@ import {
 import { EmployeeService } from './employee.service';
 import { Employee } from './entities/employee.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { NotificationGateway } from 'src/notification/notification.gateway';
 // import { PermissionGuard } from '../auth/permission/permission.guard';
 // import { Permissions } from '../auth/permission/permission.decorator';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard)
 export class EmployeeController {
-  constructor(private employeeService: EmployeeService) {}
+  constructor(
+    private employeeService: EmployeeService,
+    private readonly notificationGateway: NotificationGateway,
+    @InjectQueue('employee-queue') private readonly employeeQueue: Queue,
+  ) {}
 
   @Get()
   // @Permissions('employee.read')
@@ -55,11 +62,20 @@ export class EmployeeController {
   @Post()
   // @Permissions('employee.create')
   async create(@Body() body: Employee) {
+    // Simpan employee di database
     const data = await this.employeeService.create(body);
 
+    // Tambahkan job ke Redis queue untuk notifikasi
+    // await this.employeeQueue.add('create-employee', { employee: data });
+
+    this.notificationGateway.sendNotification({
+      message: `Employee ${data.name} created successfully!`,
+      type: 'success',
+    });
+
     return {
-      code: 'GET-EMPLOYEE-SUCCESS',
-      message: 'Update Employee Successfully',
+      code: 'CREATE-EMPLOYEE-SUCCESS',
+      message: 'Employee creation in progress',
       data,
     };
   }
